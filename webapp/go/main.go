@@ -1185,6 +1185,12 @@ func postIsuCondition(c echo.Context) error {
 		return c.String(http.StatusNotFound, "not found: isu")
 	}
 
+	err = tx.Commit()
+	if err != nil {
+		c.Logger().Errorf("db error: %v", err)
+		return c.NoContent(http.StatusInternalServerError)
+	}
+
 	isuConditions := make([]IsuCondition, len(req))
 	for i, cond := range req {
 		timestamp := time.Unix(cond.Timestamp, 0)
@@ -1202,20 +1208,34 @@ func postIsuCondition(c echo.Context) error {
 		}
 	}
 
+	go insertPostCondition(isuConditions)
+
+	return c.NoContent(http.StatusAccepted)
+}
+
+func insertPostCondition(isuConditions []IsuCondition) {
+	tx, err := db.Beginx()
+	if err != nil {
+		panic(err)
+		// c.Logger().Errorf("db error: %v", err)
+		// return c.NoContent(http.StatusInternalServerError)
+	}
+	defer tx.Rollback()
+
 	query := "INSERT INTO `isu_condition` (`jia_isu_uuid`, `timestamp`, `is_sitting`, `condition`, `message`) VALUES (:jia_isu_uuid, :timestamp, :is_sitting, :condition, :message)"
 	_, err = tx.NamedExec(query, isuConditions)
 	if err != nil {
-		//c.Logger().Errorf("db error: %v", err)
-		return c.NoContent(http.StatusInternalServerError)
+		panic(err)
+		// c.Logger().Errorf("db error: %v", err)
+		// return c.NoContent(http.StatusInternalServerError)
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		//c.Logger().Errorf("db error: %v", err)
-		return c.NoContent(http.StatusInternalServerError)
+		panic(err)
+		// c.Logger().Errorf("db error: %v", err)
+		// return c.NoContent(http.StatusInternalServerError)
 	}
-
-	return c.NoContent(http.StatusAccepted)
 }
 
 // ISUのコンディションの文字列がcsv形式になっているか検証

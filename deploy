@@ -5,7 +5,6 @@ warn() {
 }
 
 BRANCH=$1
-warn "Please implement $0"
 
 echo "cd /home/isucon && \
 git stash && \

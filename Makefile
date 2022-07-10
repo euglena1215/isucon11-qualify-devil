@@ -30,7 +30,7 @@ log_reset: ## logファイルを初期化する
 
 .PHONY: alp
 alp: ## alpのログを見る
-	@sudo cat $(NGINX_LOG) | alp json --sort avg -r
+	@sudo cat $(NGINX_LOG) | alp json --sort avg -r -m  '/api/isu/[0-9a-zA-Z\-]+,/api/condition/[0-9a-zA-Z\-]+,/api/isu/[0-9a-zA-Z\-]+/graph,/api/isu/[0-9a-zA-Z\-]+/condition,/isu/[0-9a-zA-Z\-]+/graph,/isu/[0-9a-zA-Z\-]+,/assets/.*'
 
 .PHONY: slow
 slow: ## スロークエリを見る

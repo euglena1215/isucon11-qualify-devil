@@ -275,9 +275,8 @@ func main() {
 		for {
 			conds := <-worker
 
-			conditions = append(conditions, conds...)
-
 			mu.Lock()
+			conditions = append(conditions, conds...)
 			if len(conditions) > 500 {
 				insertPostCondition(conditions)
 				conditions = make([]IsuCondition, 1000)

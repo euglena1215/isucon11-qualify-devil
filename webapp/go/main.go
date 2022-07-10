@@ -15,7 +15,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -25,7 +24,6 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
-	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -1103,14 +1101,10 @@ func getTrend(c echo.Context) error {
 		characterWarningIsuConditions := []*TrendCondition{}
 		characterCriticalIsuConditions := []*TrendCondition{}
 
-		mu := sync.Mutex{}
-
-		eg := errgroup.Group{}
 
 		for _, isu := range isuList {
 			isu := isu
 
-			eg.Go(func() error {
 				conditions := []IsuCondition{}
 				err = db.Select(&conditions,
 					"SELECT * FROM `isu_condition` WHERE `jia_isu_uuid` = ? ORDER BY timestamp DESC LIMIT 1",
@@ -1132,8 +1126,6 @@ func getTrend(c echo.Context) error {
 						ID:        isu.ID,
 						Timestamp: isuLastCondition.Timestamp.Unix(),
 					}
-					mu.Lock()
-					defer mu.Unlock()
 					switch conditionLevel {
 					case "info":
 						characterInfoIsuConditions = append(characterInfoIsuConditions, &trendCondition)
@@ -1145,12 +1137,7 @@ func getTrend(c echo.Context) error {
 				}
 
 				return nil
-			})
 
-		}
-
-		if err := eg.Wait(); err != nil {
-			return err
 		}
 
 		sort.Slice(characterInfoIsuConditions, func(i, j int) bool {

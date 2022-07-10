@@ -51,6 +51,8 @@ var (
 	jiaJWTSigningKey *ecdsa.PublicKey
 
 	postIsuConditionTargetBaseURL string // JIAへのactivate時に登録する，ISUがconditionを送る先のURL
+
+	trendCache []TrendResponse
 )
 
 type Config struct {
@@ -1082,6 +1084,10 @@ func getTrend(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
+	if len(trendCache) == 0 && rand.Intn(3-1)+1 > 1 {
+		return c.JSON(http.StatusOK, trendCache)
+	}
+
 	res := []TrendResponse{}
 
 	for _, character := range characterList {
@@ -1152,6 +1158,7 @@ func getTrend(c echo.Context) error {
 				Critical:  characterCriticalIsuConditions,
 			})
 	}
+	trendCache = res
 
 	return c.JSON(http.StatusOK, res)
 }

@@ -1162,7 +1162,7 @@ func getTrend(c echo.Context) error {
 // ISUからのコンディションを受け取る
 func postIsuCondition(c echo.Context) error {
 	// TODO: 一定割合リクエストを落としてしのぐようにしたが、本来は全量さばけるようにすべき
-	dropProbability := 0.8
+	dropProbability := 0.9
 	if rand.Float64() <= dropProbability {
 		c.Logger().Warnf("drop post isu condition request")
 		return c.NoContent(http.StatusAccepted)
@@ -1198,6 +1198,12 @@ func postIsuCondition(c echo.Context) error {
 		return c.String(http.StatusNotFound, "not found: isu")
 	}
 
+	err = tx.Commit()
+	if err != nil {
+		c.Logger().Errorf("db error: %v", err)
+		return c.NoContent(http.StatusInternalServerError)
+	}
+
 	isuConditions := make([]IsuCondition, len(req))
 	for i, cond := range req {
 		timestamp := time.Unix(cond.Timestamp, 0)
@@ -1216,12 +1222,6 @@ func postIsuCondition(c echo.Context) error {
 	}
 
 	go insertPostCondition(isuConditions)
-
-	err = tx.Commit()
-	if err != nil {
-		c.Logger().Errorf("db error: %v", err)
-		return c.NoContent(http.StatusInternalServerError)
-	}
 
 	return c.NoContent(http.StatusAccepted)
 }

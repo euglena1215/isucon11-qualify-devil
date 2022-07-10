@@ -261,18 +261,18 @@ func main() {
 	mu := sync.Mutex{}
 
 	go func() {
-    for{
-      conds := <-worker
+		for {
+			conds := <-worker
 
-      conditions = append(conditions, conds...)
+			conditions = append(conditions, conds...)
 
-      mu.Lock()
-      if len(conditions) > 500 {
-        insertPostCondition(conditions)
-        conditions = make([]IsuCondition, 1000)
-      }
-      mu.Unlock()
-    }
+			mu.Lock()
+			if len(conditions) > 500 {
+				insertPostCondition(conditions)
+				conditions = make([]IsuCondition, 1000)
+			}
+			mu.Unlock()
+		}
 	}()
 
 	serverPort := fmt.Sprintf(":%v", getEnv("SERVER_APP_PORT", "3000"))

@@ -62,11 +62,11 @@ pprof:
 
 .PHONY: application_build
 application_build: ## application build (wip)
-	@echo "Please implement!!"
+	(cd webapp/go; go build -o isucondition main.go)
 
 .PHONY: application_restart
 application_restart: ## application restart (wip)
-	@echo "Please implement!!"
+	sudo systemctl restart isucondition.go.service
 
 .PHONY: middleware_restart
 middleware_restart: ## mysqlとnginxのrestart

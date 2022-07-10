@@ -10,9 +10,9 @@ NGINX_CONFIG := /etc/nginx/nginx.conf
 
 DB_HOST := 127.0.0.1
 DB_PORT := 3306
-DB_USER := todo
-DB_PASS := todo
-DB_NAME := todo
+DB_USER := isucon
+DB_PASS := isucon
+DB_NAME := isucondition
 
 EDIT_MYSQL_CONFIG := $(APP_DIR)/my.cnf
 EDIT_NGINX_CONFIG := $(APP_DIR)/nginx.conf
@@ -78,3 +78,9 @@ restart: application_restart middleware_restart ## application, mysql, nginxの�
 
 .PHONY: bench
 bench: log_reset application_build restart slow_on ## bench回す前に実行するコマンド(これで全ての前処理が完了する状態を作る)
+
+.PHONY: commit
+commit:
+	cd $(PROJECT_ROOT); \
+	git add .; \
+	git commit --allow-empty -m "bench"

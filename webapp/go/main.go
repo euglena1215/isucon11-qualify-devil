@@ -17,7 +17,6 @@ import (
 	"strings"
 	"time"
 
-	"cloud.google.com/go/profiler"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/go-sql-driver/mysql"
 	"github.com/gorilla/sessions"
@@ -84,13 +83,14 @@ type GetIsuListResponse struct {
 }
 
 type IsuCondition struct {
-	ID         int       `db:"id"`
-	JIAIsuUUID string    `db:"jia_isu_uuid"`
-	Timestamp  time.Time `db:"timestamp"`
-	IsSitting  bool      `db:"is_sitting"`
-	Condition  string    `db:"condition"`
-	Message    string    `db:"message"`
-	CreatedAt  time.Time `db:"created_at"`
+	ID         int       	`db:"id"`
+	JIAIsuUUID string    	`db:"jia_isu_uuid"`
+	Timestamp  time.Time 	`db:"timestamp"`
+	IsSitting  bool      	`db:"is_sitting"`
+	Condition  string    	`db:"condition"`
+	Message    string    	`db:"message"`
+	CreatedAt  time.Time 	`db:"created_at"`
+	ConditionLevel string	`db:"condition_level"`
 }
 
 type MySQLConnectionEnv struct {
@@ -210,16 +210,16 @@ func init() {
 }
 
 func main() {
-	cfg := profiler.Config{
-		Service:        "isucon11-q-devil",
-		ServiceVersion: "0.0.1",
-		ProjectID:      "wantedly-dev",
-	}
-
-	// Profiler initialization, best done as early as possible.
-	if err := profiler.Start(cfg); err != nil {
-		log.Fatalf("failed to parse ECDSA public key: %v", err)
-	}
+	//cfg := profiler.Config{
+	//	Service:        "isucon11-q-devil",
+	//	ServiceVersion: "0.0.1",
+	//	ProjectID:      "wantedly-dev",
+	//}
+//
+	//// Profiler initialization, best done as early as possible.
+	//if err := profiler.Start(cfg); err != nil {
+	//	log.Fatalf("failed to parse ECDSA public key: %v", err)
+	//}
 	e := echo.New()
 	e.Debug = true
 	e.Logger.SetLevel(log.DEBUG)
@@ -1217,12 +1217,19 @@ func postIsuCondition(c echo.Context) error {
 			return c.String(http.StatusBadRequest, "bad request body")
 		}
 
+		conditionLevel, err := calculateConditionLevel(cond.Condition)
+			if err != nil {
+				//c.Logger().Error(err)
+				return c.NoContent(http.StatusInternalServerError)
+			}
+
 		isuConditions[i] = IsuCondition{
 			JIAIsuUUID: jiaIsuUUID,
 			Timestamp:  timestamp,
 			IsSitting:  cond.IsSitting,
 			Condition:  cond.Condition,
 			Message:    cond.Message,
+			ConditionLevel: conditionLevel,
 		}
 	}
 
@@ -1240,7 +1247,7 @@ func insertPostCondition(isuConditions []IsuCondition) {
 	}
 	defer tx.Rollback()
 
-	query := "INSERT INTO `isu_condition` (`jia_isu_uuid`, `timestamp`, `is_sitting`, `condition`, `message`) VALUES (:jia_isu_uuid, :timestamp, :is_sitting, :condition, :message)"
+	query := "INSERT INTO `isu_condition` (`jia_isu_uuid`, `timestamp`, `is_sitting`, `condition`, `message`, `condition_level`) VALUES (:jia_isu_uuid, :timestamp, :is_sitting, :condition, :message, :condition_level)"
 	_, err = tx.NamedExec(query, isuConditions)
 	if err != nil {
 		panic(err)

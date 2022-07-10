@@ -768,7 +768,7 @@ func generateIsuGraphResponse(tx *sqlx.DB, jiaIsuUUID string, graphDate time.Tim
 	var condition IsuCondition
 
 	endTime := graphDate.Add(time.Hour * 24)
-	rows, err := db.Queryx("SELECT * FROM `isu_condition` WHERE `jia_isu_uuid` = ? AND `timestamp` <= ? AND `timestamp >= ? ORDER BY `timestamp` ASC", jiaIsuUUID, graphDate, endTime)
+	rows, err := db.Queryx("SELECT * FROM `isu_condition` WHERE `jia_isu_uuid` = ? AND `timestamp` <= ? AND `timestamp` >= ? ORDER BY `timestamp` ASC", jiaIsuUUID, graphDate, endTime)
 	if err != nil {
 		return nil, fmt.Errorf("db error: %v", err)
 	}

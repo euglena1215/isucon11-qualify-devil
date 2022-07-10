@@ -82,13 +82,14 @@ type GetIsuListResponse struct {
 }
 
 type IsuCondition struct {
-	ID         int       `db:"id"`
-	JIAIsuUUID string    `db:"jia_isu_uuid"`
-	Timestamp  time.Time `db:"timestamp"`
-	IsSitting  bool      `db:"is_sitting"`
-	Condition  string    `db:"condition"`
-	Message    string    `db:"message"`
-	CreatedAt  time.Time `db:"created_at"`
+	ID         int       	`db:"id"`
+	JIAIsuUUID string    	`db:"jia_isu_uuid"`
+	Timestamp  time.Time 	`db:"timestamp"`
+	IsSitting  bool      	`db:"is_sitting"`
+	Condition  string    	`db:"condition"`
+	Message    string    	`db:"message"`
+	CreatedAt  time.Time 	`db:"created_at"`
+	ConditionLevel string	`db:"condition_level"`
 }
 
 type MySQLConnectionEnv struct {
@@ -1210,12 +1211,19 @@ func postIsuCondition(c echo.Context) error {
 			return c.String(http.StatusBadRequest, "bad request body")
 		}
 
+		conditionLevel, err := calculateConditionLevel(cond.Condition)
+			if err != nil {
+				//c.Logger().Error(err)
+				return c.NoContent(http.StatusInternalServerError)
+			}
+
 		isuConditions[i] = IsuCondition{
 			JIAIsuUUID: jiaIsuUUID,
 			Timestamp:  timestamp,
 			IsSitting:  cond.IsSitting,
 			Condition:  cond.Condition,
 			Message:    cond.Message,
+			ConditionLevel: conditionLevel,
 		}
 	}
 
@@ -1233,7 +1241,7 @@ func insertPostCondition(isuConditions []IsuCondition) {
 	}
 	defer tx.Rollback()
 
-	query := "INSERT INTO `isu_condition` (`jia_isu_uuid`, `timestamp`, `is_sitting`, `condition`, `message`) VALUES (:jia_isu_uuid, :timestamp, :is_sitting, :condition, :message)"
+	query := "INSERT INTO `isu_condition` (`jia_isu_uuid`, `timestamp`, `is_sitting`, `condition`, `message`, `condition_level`) VALUES (:jia_isu_uuid, :timestamp, :is_sitting, :condition, :message, :condition_level)"
 	_, err = tx.NamedExec(query, isuConditions)
 	if err != nil {
 		panic(err)

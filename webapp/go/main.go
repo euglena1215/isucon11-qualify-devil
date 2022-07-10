@@ -767,7 +767,8 @@ func generateIsuGraphResponse(tx *sqlx.DB, jiaIsuUUID string, graphDate time.Tim
 	var startTimeInThisHour time.Time
 	var condition IsuCondition
 
-	rows, err := db.Queryx("SELECT * FROM `isu_condition` WHERE `jia_isu_uuid` = ? ORDER BY `timestamp` ASC", jiaIsuUUID)
+	endTime := graphDate.Add(time.Hour * 24)
+	rows, err := db.Queryx("SELECT * FROM `isu_condition` WHERE `jia_isu_uuid` = ? and `timestamp` < ? and `timestamp > ? ORDER BY `timestamp` ASC", jiaIsuUUID, graphDate, endTime)
 	if err != nil {
 		return nil, fmt.Errorf("db error: %v", err)
 	}
@@ -816,7 +817,6 @@ func generateIsuGraphResponse(tx *sqlx.DB, jiaIsuUUID string, graphDate time.Tim
 				ConditionTimestamps: timestampsInThisHour})
 	}
 
-	endTime := graphDate.Add(time.Hour * 24)
 	startIndex := len(dataPoints)
 	endNextIndex := len(dataPoints)
 	for i, graph := range dataPoints {

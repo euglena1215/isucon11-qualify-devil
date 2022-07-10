@@ -263,10 +263,12 @@ func main() {
 	go func() {
 		conds := <-worker
 
-		mu.Lock()
 		conditions = append(conditions, conds...)
+
+		mu.Lock()
 		if len(conditions) > 100 {
 			insertPostCondition(conditions)
+			conditions = make([]IsuCondition, 1000)
 		}
 		mu.Unlock()
 	}()

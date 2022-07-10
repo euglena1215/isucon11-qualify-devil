@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"math/rand"
 	"net/http"
 	"os"
 	"os/exec"
@@ -207,6 +206,8 @@ func init() {
 	}
 }
 
+var worker chan []IsuCondition
+
 func main() {
 	cfg := profiler.Config{
 		Service:        "isucon11-q-devil",
@@ -263,6 +264,24 @@ func main() {
 		e.Logger.Fatalf("missing: POST_ISUCONDITION_TARGET_BASE_URL")
 		return
 	}
+
+	// worker = make(chan []IsuCondition, 1000)
+	// conditions := make([]IsuCondition, 1000)
+	// mu := sync.Mutex{}
+	//
+	// go func() {
+	// 	for {
+	// 		conds := <-worker
+	//
+	// 		mu.Lock()
+	// 		conditions = append(conditions, conds...)
+	// 		if len(conditions) > 500 {
+	// 			insertPostCondition(conditions)
+	// 			conditions = make([]IsuCondition, 1000)
+	// 		}
+	// 		mu.Unlock()
+	// 	}
+	// }()
 
 	serverPort := fmt.Sprintf(":%v", getEnv("SERVER_APP_PORT", "3000"))
 	e.Logger.Fatal(e.Start(serverPort))
@@ -1159,13 +1178,6 @@ func getTrend(c echo.Context) error {
 // POST /api/condition/:jia_isu_uuid
 // ISUからのコンディションを受け取る
 func postIsuCondition(c echo.Context) error {
-	// TODO: 一定割合リクエストを落としてしのぐようにしたが、本来は全量さばけるようにすべき
-	dropProbability := 0.9
-	if rand.Float64() <= dropProbability {
-		//c.Logger().Warnf("drop post isu condition request")
-		return c.NoContent(http.StatusAccepted)
-	}
-
 	jiaIsuUUID := c.Param("jia_isu_uuid")
 	if jiaIsuUUID == "" {
 		return c.String(http.StatusBadRequest, "missing: jia_isu_uuid")
@@ -1179,27 +1191,18 @@ func postIsuCondition(c echo.Context) error {
 		return c.String(http.StatusBadRequest, "bad request body")
 	}
 
-	tx, err := db.Beginx()
 	if err != nil {
 		//c.Logger().Errorf("db error: %v", err)
 		return c.NoContent(http.StatusInternalServerError)
 	}
-	defer tx.Rollback()
-
 	var count int
-	err = tx.Get(&count, "SELECT COUNT(*) FROM `isu` WHERE `jia_isu_uuid` = ?", jiaIsuUUID)
+	err = db.Get(&count, "SELECT COUNT(*) FROM `isu` WHERE `jia_isu_uuid` = ?", jiaIsuUUID)
 	if err != nil {
 		//c.Logger().Errorf("db error: %v", err)
 		return c.NoContent(http.StatusInternalServerError)
 	}
 	if count == 0 {
 		return c.String(http.StatusNotFound, "not found: isu")
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		c.Logger().Errorf("db error: %v", err)
-		return c.NoContent(http.StatusInternalServerError)
 	}
 
 	isuConditions := make([]IsuCondition, len(req))
@@ -1219,33 +1222,21 @@ func postIsuCondition(c echo.Context) error {
 		}
 	}
 
+	// worker <- isuConditions
 	go insertPostCondition(isuConditions)
 
 	return c.NoContent(http.StatusAccepted)
 }
 
 func insertPostCondition(isuConditions []IsuCondition) {
-	tx, err := db.Beginx()
-	if err != nil {
-		panic(err)
-		// c.Logger().Errorf("db error: %v", err)
-		// return c.NoContent(http.StatusInternalServerError)
-	}
-	defer tx.Rollback()
-
 	query := "INSERT INTO `isu_condition` (`jia_isu_uuid`, `timestamp`, `is_sitting`, `condition`, `message`) VALUES (:jia_isu_uuid, :timestamp, :is_sitting, :condition, :message)"
-	_, err = tx.NamedExec(query, isuConditions)
+	_, err := db.NamedExec(query, isuConditions)
 	if err != nil {
-		panic(err)
-		// c.Logger().Errorf("db error: %v", err)
-		// return c.NoContent(http.StatusInternalServerError)
+		log.Printf("db error: %v\n", err)
 	}
 
-	err = tx.Commit()
 	if err != nil {
-		panic(err)
-		// c.Logger().Errorf("db error: %v", err)
-		// return c.NoContent(http.StatusInternalServerError)
+		log.Printf("db error: %v\n", err)
 	}
 }
 

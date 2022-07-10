@@ -15,6 +15,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -206,6 +207,8 @@ func init() {
 	}
 }
 
+var worker chan []IsuCondition
+
 func main() {
 	e := echo.New()
 	e.Debug = true
@@ -252,6 +255,21 @@ func main() {
 		e.Logger.Fatalf("missing: POST_ISUCONDITION_TARGET_BASE_URL")
 		return
 	}
+
+	worker = make(chan []IsuCondition, 1000)
+	conditions := make([]IsuCondition, 1000)
+	mu := sync.Mutex{}
+
+	go func() {
+		conds := <-worker
+
+		mu.Lock()
+		conditions = append(conditions, conds...)
+		if len(conditions) > 100 {
+			insertPostCondition(conditions)
+		}
+		mu.Unlock()
+	}()
 
 	serverPort := fmt.Sprintf(":%v", getEnv("SERVER_APP_PORT", "3000"))
 	e.Logger.Fatal(e.Start(serverPort))
@@ -1208,14 +1226,15 @@ func postIsuCondition(c echo.Context) error {
 		}
 	}
 
-	go insertPostCondition(isuConditions)
+	worker <- isuConditions
+	// go insertPostCondition(isuConditions)
 
 	return c.NoContent(http.StatusAccepted)
 }
 
 func insertPostCondition(isuConditions []IsuCondition) {
 	query := "INSERT INTO `isu_condition` (`jia_isu_uuid`, `timestamp`, `is_sitting`, `condition`, `message`) VALUES (:jia_isu_uuid, :timestamp, :is_sitting, :condition, :message)"
-  _, err := db.NamedExec(query, isuConditions)
+	_, err := db.NamedExec(query, isuConditions)
 	if err != nil {
 		log.Printf("db error: %v\n", err)
 	}

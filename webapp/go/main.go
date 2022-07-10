@@ -266,7 +266,7 @@ func main() {
 		conditions = append(conditions, conds...)
 
 		mu.Lock()
-		if len(conditions) > 100 {
+		if len(conditions) > 500 {
 			insertPostCondition(conditions)
 			conditions = make([]IsuCondition, 1000)
 		}

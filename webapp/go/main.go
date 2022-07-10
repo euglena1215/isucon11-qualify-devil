@@ -1214,27 +1214,14 @@ func postIsuCondition(c echo.Context) error {
 }
 
 func insertPostCondition(isuConditions []IsuCondition) {
-	tx, err := db.Beginx()
-	if err != nil {
-		panic(err)
-		// c.Logger().Errorf("db error: %v", err)
-		// return c.NoContent(http.StatusInternalServerError)
-	}
-	defer tx.Rollback()
-
 	query := "INSERT INTO `isu_condition` (`jia_isu_uuid`, `timestamp`, `is_sitting`, `condition`, `message`) VALUES (:jia_isu_uuid, :timestamp, :is_sitting, :condition, :message)"
-	_, err = tx.NamedExec(query, isuConditions)
+  _, err := db.NamedExec(query, isuConditions)
 	if err != nil {
-		panic(err)
-		// c.Logger().Errorf("db error: %v", err)
-		// return c.NoContent(http.StatusInternalServerError)
+		log.Printf("db error: %v\n", err)
 	}
 
-	err = tx.Commit()
 	if err != nil {
-		panic(err)
-		// c.Logger().Errorf("db error: %v", err)
-		// return c.NoContent(http.StatusInternalServerError)
+		log.Printf("db error: %v\n", err)
 	}
 }
 

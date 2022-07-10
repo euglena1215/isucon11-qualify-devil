@@ -269,11 +269,11 @@ func main() {
 	// worker = make(chan []IsuCondition, 1000)
 	// conditions := make([]IsuCondition, 1000)
 	// mu := sync.Mutex{}
-  //
+	//
 	// go func() {
 	// 	for {
 	// 		conds := <-worker
-  //
+	//
 	// 		mu.Lock()
 	// 		conditions = append(conditions, conds...)
 	// 		if len(conditions) > 500 {

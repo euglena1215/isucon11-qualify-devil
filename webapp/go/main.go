@@ -1101,42 +1101,39 @@ func getTrend(c echo.Context) error {
 		characterWarningIsuConditions := []*TrendCondition{}
 		characterCriticalIsuConditions := []*TrendCondition{}
 
-
 		for _, isu := range isuList {
 			isu := isu
 
-				conditions := []IsuCondition{}
-				err = db.Select(&conditions,
-					"SELECT * FROM `isu_condition` WHERE `jia_isu_uuid` = ? ORDER BY timestamp DESC LIMIT 1",
-					isu.JIAIsuUUID,
-				)
+			conditions := []IsuCondition{}
+			err = db.Select(&conditions,
+				"SELECT * FROM `isu_condition` WHERE `jia_isu_uuid` = ? ORDER BY timestamp DESC LIMIT 1",
+				isu.JIAIsuUUID,
+			)
+			if err != nil {
+				c.Logger().Errorf("db error: %v", err)
+				return c.NoContent(http.StatusInternalServerError)
+			}
+
+			if len(conditions) > 0 {
+				isuLastCondition := conditions[0]
+				conditionLevel, err := calculateConditionLevel(isuLastCondition.Condition)
 				if err != nil {
-					c.Logger().Errorf("db error: %v", err)
+					c.Logger().Error(err)
 					return c.NoContent(http.StatusInternalServerError)
 				}
-
-				if len(conditions) > 0 {
-					isuLastCondition := conditions[0]
-					conditionLevel, err := calculateConditionLevel(isuLastCondition.Condition)
-					if err != nil {
-						c.Logger().Error(err)
-						return c.NoContent(http.StatusInternalServerError)
-					}
-					trendCondition := TrendCondition{
-						ID:        isu.ID,
-						Timestamp: isuLastCondition.Timestamp.Unix(),
-					}
-					switch conditionLevel {
-					case "info":
-						characterInfoIsuConditions = append(characterInfoIsuConditions, &trendCondition)
-					case "warning":
-						characterWarningIsuConditions = append(characterWarningIsuConditions, &trendCondition)
-					case "critical":
-						characterCriticalIsuConditions = append(characterCriticalIsuConditions, &trendCondition)
-					}
+				trendCondition := TrendCondition{
+					ID:        isu.ID,
+					Timestamp: isuLastCondition.Timestamp.Unix(),
 				}
-
-				return nil
+				switch conditionLevel {
+				case "info":
+					characterInfoIsuConditions = append(characterInfoIsuConditions, &trendCondition)
+				case "warning":
+					characterWarningIsuConditions = append(characterWarningIsuConditions, &trendCondition)
+				case "critical":
+					characterCriticalIsuConditions = append(characterCriticalIsuConditions, &trendCondition)
+				}
+			}
 
 		}
 

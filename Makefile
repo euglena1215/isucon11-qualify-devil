@@ -61,7 +61,7 @@ pprof:
 
 .PHONY: application_build
 application_build: ## application build (wip)
-	(cd webapp/go; go build -o isucondition main.go)
+	(cd webapp/go; /home/isucon/local/go/bin/go build -o isucondition main.go)
 
 .PHONY: application_restart
 application_restart: ## application restart (wip)

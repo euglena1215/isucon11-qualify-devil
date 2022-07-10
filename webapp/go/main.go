@@ -343,20 +343,6 @@ func postInitialize(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
-	// condition_level の初期化
-	_, err = db.Exec("UPDATE `isu` SET `condition_level` = 'info' WHERE (LENGTH(`condition`) - LENGTH(REPLACE(`condition`, '=true', ''))) / LENGTH('=true') = 0")
-	if err != nil {
-		return c.NoContent(http.StatusInternalServerError)
-	}
-	_, err = db.Exec("UPDATE `isu` SET `condition_level` = 'warning' WHERE (LENGTH(`condition`) - LENGTH(REPLACE(`condition`, '=true', ''))) / LENGTH('=true') IN (1,2)")
-	if err != nil {
-		return c.NoContent(http.StatusInternalServerError)
-	}
-	_, err = db.Exec("UPDATE `isu` SET `condition_level` = 'critical' WHERE (LENGTH(`condition`) - LENGTH(REPLACE(`condition`, '=true', ''))) / LENGTH('=true') = 3")
-	if err != nil {
-		return c.NoContent(http.StatusInternalServerError)
-	}
-
 	return c.JSON(http.StatusOK, InitializeResponse{
 		Language: "go",
 	})

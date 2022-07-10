@@ -82,13 +82,14 @@ type GetIsuListResponse struct {
 }
 
 type IsuCondition struct {
-	ID         int       `db:"id"`
-	JIAIsuUUID string    `db:"jia_isu_uuid"`
-	Timestamp  time.Time `db:"timestamp"`
-	IsSitting  bool      `db:"is_sitting"`
-	Condition  string    `db:"condition"`
-	Message    string    `db:"message"`
-	CreatedAt  time.Time `db:"created_at"`
+	ID         int       	`db:"id"`
+	JIAIsuUUID string    	`db:"jia_isu_uuid"`
+	Timestamp  time.Time 	`db:"timestamp"`
+	IsSitting  bool      	`db:"is_sitting"`
+	Condition  string    	`db:"condition"`
+	Message    string    	`db:"message"`
+	CreatedAt  time.Time 	`db:"created_at"`
+	ConditionLevel string	`db:"condition_level"`
 }
 
 type MySQLConnectionEnv struct {
@@ -339,6 +340,20 @@ func postInitialize(c echo.Context) error {
 	)
 	if err != nil {
 		//c.Logger().Errorf("db error : %v", err)
+		return c.NoContent(http.StatusInternalServerError)
+	}
+
+	// condition_level の初期化
+	_, err = db.Exec("UPDATE `isu` SET `condition_level` = 'info' WHERE (LENGTH(`condition`) - LENGTH(REPLACE(`condition`, '=true', ''))) / LENGTH('=true') = 0")
+	if err != nil {
+		return c.NoContent(http.StatusInternalServerError)
+	}
+	_, err = db.Exec("UPDATE `isu` SET `condition_level` = 'warning' WHERE (LENGTH(`condition`) - LENGTH(REPLACE(`condition`, '=true', ''))) / LENGTH('=true') IN (1,2)")
+	if err != nil {
+		return c.NoContent(http.StatusInternalServerError)
+	}
+	_, err = db.Exec("UPDATE `isu` SET `condition_level` = 'critical' WHERE (LENGTH(`condition`) - LENGTH(REPLACE(`condition`, '=true', ''))) / LENGTH('=true') = 3")
+	if err != nil {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
@@ -1210,12 +1225,19 @@ func postIsuCondition(c echo.Context) error {
 			return c.String(http.StatusBadRequest, "bad request body")
 		}
 
+		conditionLevel, err := calculateConditionLevel(cond.Condition)
+			if err != nil {
+				//c.Logger().Error(err)
+				return c.NoContent(http.StatusInternalServerError)
+			}
+
 		isuConditions[i] = IsuCondition{
 			JIAIsuUUID: jiaIsuUUID,
 			Timestamp:  timestamp,
 			IsSitting:  cond.IsSitting,
 			Condition:  cond.Condition,
 			Message:    cond.Message,
+			ConditionLevel: conditionLevel,
 		}
 	}
 
@@ -1233,7 +1255,7 @@ func insertPostCondition(isuConditions []IsuCondition) {
 	}
 	defer tx.Rollback()
 
-	query := "INSERT INTO `isu_condition` (`jia_isu_uuid`, `timestamp`, `is_sitting`, `condition`, `message`) VALUES (:jia_isu_uuid, :timestamp, :is_sitting, :condition, :message)"
+	query := "INSERT INTO `isu_condition` (`jia_isu_uuid`, `timestamp`, `is_sitting`, `condition`, `message`, `condition_level`) VALUES (:jia_isu_uuid, :timestamp, :is_sitting, :condition, :message, :condition_level)"
 	_, err = tx.NamedExec(query, isuConditions)
 	if err != nil {
 		panic(err)

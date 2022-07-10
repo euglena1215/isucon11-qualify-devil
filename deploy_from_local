@@ -5,8 +5,8 @@ warn() {
 }
 
 TARGET=$1
-BRANCH=$2
-PEM=$3
+PEM=$2
+BRANCH=$3
 
 if [ "$TARGET" = "server1" ]; then
   SSH_OPTION="-i $PEM ubuntu@35.77.14.114"

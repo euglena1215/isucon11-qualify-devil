@@ -15,7 +15,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"cloud.google.com/go/profiler"
@@ -267,23 +266,23 @@ func main() {
 		return
 	}
 
-	worker = make(chan []IsuCondition, 1000)
-	conditions := make([]IsuCondition, 1000)
-	mu := sync.Mutex{}
-
-	go func() {
-		for {
-			conds := <-worker
-
-			mu.Lock()
-			conditions = append(conditions, conds...)
-			if len(conditions) > 500 {
-				insertPostCondition(conditions)
-				conditions = make([]IsuCondition, 1000)
-			}
-			mu.Unlock()
-		}
-	}()
+	// worker = make(chan []IsuCondition, 1000)
+	// conditions := make([]IsuCondition, 1000)
+	// mu := sync.Mutex{}
+  //
+	// go func() {
+	// 	for {
+	// 		conds := <-worker
+  //
+	// 		mu.Lock()
+	// 		conditions = append(conditions, conds...)
+	// 		if len(conditions) > 500 {
+	// 			insertPostCondition(conditions)
+	// 			conditions = make([]IsuCondition, 1000)
+	// 		}
+	// 		mu.Unlock()
+	// 	}
+	// }()
 
 	serverPort := fmt.Sprintf(":%v", getEnv("SERVER_APP_PORT", "3000"))
 	e.Logger.Fatal(e.Start(serverPort))

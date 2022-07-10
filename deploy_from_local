@@ -6,6 +6,17 @@ warn() {
 
 TARGET=$1
 BRANCH=$2
-warn "Please implement $0"
+PEM=$3
 
-ssh $TARGET "/home/isucon/deploy $BRANCH"
+if [ "$TARGET" = "server1" ]; then
+  SSH_OPTION="-i $PEM ubuntu@35.77.14.114"
+elif [ "$TARGET" = "server2" ]; then
+  SSH_OPTION="-i $PEM ubuntu@35.74.1.250"
+elif [ "$TARGET" = "server3" ]; then
+  SSH_OPTION="-i $PEM ubuntu@35.78.253.84"
+else
+  warn "Please set server1 or server2 or server3"
+  exit 1
+fi
+
+ssh $SSH_OPTION "sudo -u isucon /home/isucon/deploy $BRANCH"

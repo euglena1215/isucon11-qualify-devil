@@ -81,6 +81,4 @@ bench: log_reset application_build restart slow_on ## bench回す前に実行す
 
 .PHONY: commit
 commit:
-	cd $(PROJECT_ROOT); \
-	git add .; \
 	git commit --allow-empty -m "bench"

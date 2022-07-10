@@ -1133,7 +1133,7 @@ func getTrend(c echo.Context) error {
 						Timestamp: isuLastCondition.Timestamp.Unix(),
 					}
 					mu.Lock()
-          defer mu.Unlock()
+					defer mu.Unlock()
 					switch conditionLevel {
 					case "info":
 						characterInfoIsuConditions = append(characterInfoIsuConditions, &trendCondition)

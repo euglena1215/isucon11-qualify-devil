@@ -1084,7 +1084,7 @@ func getTrend(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
-	if len(trendCache) == 0 && rand.Intn(3-1)+1 > 1 {
+	if len(trendCache) != 0 && rand.Intn(3-1)+1 > 1 {
 		return c.JSON(http.StatusOK, trendCache)
 	}
 

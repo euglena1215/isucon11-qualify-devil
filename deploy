@@ -4,18 +4,25 @@ warn() {
   printf "[\033[00;33mWARN\033[0m] $1\n"
 }
 
-BRANCH=$1
+TARGET=$1
+BRANCH=$2
 
-echo "cd /home/isucon && \
-git fetch && \
-git stash && \
-git checkout $BRANCH && \
-git pull origin $BRANCH && \
-make bench"
+# branch 指定がなければ current branch を指定したとみなす
+if [ -z "$BRANCH" ]; then
+  BRANCH=`git rev-parse --abbrev-ref HEAD`
+fi
 
-cd /home/isucon && \
-git fetch && \
-git stash && \
-git checkout $BRANCH && \
-git pull origin $BRANCH && \
-make bench
+if [ "$TARGET" = "server1" ]; then
+  SSH_OPTION="isu11q-1"
+elif [ "$TARGET" = "server2" ]; then
+  SSH_OPTION="isu11q-2"
+elif [ "$TARGET" = "server3" ]; then
+  SSH_OPTION="isu11q-3"
+else
+  warn "Please set server1 or server2 or server3"
+  exit 1
+fi
+
+echo $SSH_OPTION
+echo $BRANCH
+# ssh $SSH_OPTION "sudo -u isucon /home/isucon/deploy $BRANCH"

@@ -342,6 +342,9 @@ func postInitialize(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
+	trendCache = nil
+	timeTrendCache = time.Time{}
+
 	return c.JSON(http.StatusOK, InitializeResponse{
 		Language: "go",
 	})

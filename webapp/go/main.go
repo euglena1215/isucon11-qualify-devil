@@ -1045,7 +1045,7 @@ func getIsuConditionsFromDB(db *sqlx.DB, jiaIsuUUID string, endTime time.Time, l
 			return nil, fmt.Errorf("db error: %v", err)
 		}
 	}
-	
+
 	if err != nil {
 		return nil, fmt.Errorf("db error: %v", err)
 	}
@@ -1189,7 +1189,7 @@ func getTrend(c echo.Context) error {
 // ISUからのコンディションを受け取る
 func postIsuCondition(c echo.Context) error {
 	// TODO: 一定割合リクエストを落としてしのぐようにしたが、本来は全量さばけるようにすべき
-	dropProbability := 0.9
+	dropProbability := 0.5
 	if rand.Float64() <= dropProbability {
 		//c.Logger().Warnf("drop post isu condition request")
 		return c.NoContent(http.StatusAccepted)
@@ -1334,6 +1334,6 @@ func NamedInSql(db *sqlx.DB, query string, arg interface{}) (string, []interface
         return "", nil, err
     }
     query = db.Rebind(query)
- 
+
     return query, args, err
 }

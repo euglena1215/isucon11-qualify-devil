@@ -17,6 +17,7 @@ import (
 	"sync"
 	"time"
 
+	"cloud.google.com/go/profiler"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/go-sql-driver/mysql"
 	"github.com/gorilla/sessions"
@@ -208,16 +209,16 @@ func init() {
 }
 
 func main() {
-	//cfg := profiler.Config{
-	//	Service:        "isucon11-q-devil",
-	//	ServiceVersion: "0.0.1",
-	//	ProjectID:      "wantedly-dev",
-	//}
-	//
-	//// Profiler initialization, best done as early as possible.
-	//if err := profiler.Start(cfg); err != nil {
-	//	log.Fatalf("failed to parse ECDSA public key: %v", err)
-	//}
+	cfg := profiler.Config{
+		Service:        "isucon11-q-devil",
+		ServiceVersion: "0.0.1",
+		ProjectID:      "wantedly-dev",
+	}
+
+	// Profiler initialization, best done as early as possible.
+	if err := profiler.Start(cfg); err != nil {
+		log.Fatalf("failed to parse ECDSA public key: %v", err)
+	}
 	e := echo.New()
 	e.Debug = true
 	e.Logger.SetLevel(log.DEBUG)

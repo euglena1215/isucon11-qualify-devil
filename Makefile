@@ -30,7 +30,7 @@ log_reset: ## logファイルを初期化する
 
 .PHONY: alp
 alp: ## alpのログを見る
-	@sudo cat $(NGINX_LOG) | alp json --sort avg -r -m '/api/condition/[0-9a-zA-Z-]+,/api/isu/[0-9a-zA-Z-]+/graph,/api/isu/[0-9a-zA-Z-]+/icon,/api/isu/[0-9a-zA-Z-]+,/isu/[0-9a-zA-Z-]+/graph,/isu/[0-9a-zA-Z-]+,/assets/.+.css/assets/.+.png,/assets/.+.svg,/assets/.+.js'
+	@sudo cat $(NGINX_LOG) | alp json --format markdown --sort avg -r -m '/api/condition/[0-9a-zA-Z-]+,/api/isu/[0-9a-zA-Z-]+/graph,/api/isu/[0-9a-zA-Z-]+/icon,/api/isu/[0-9a-zA-Z-]+,/isu/[0-9a-zA-Z-]+/graph,/isu/[0-9a-zA-Z-]+,/assets/.+.css/assets/.+.png,/assets/.+.svg,/assets/.+.js'
 .PHONY: slow
 slow: ## スロークエリを見る
 	@sudo pt-query-digest $(MYSQL_SLOW_LOG)
@@ -80,4 +80,6 @@ bench: log_reset application_build restart slow_on ## bench回す前に実行す
 
 .PHONY: commit
 commit:
+	git add -u .
 	git commit --allow-empty -m "bench"
+	git push origin HEAD

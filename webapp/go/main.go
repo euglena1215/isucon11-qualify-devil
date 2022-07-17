@@ -81,14 +81,14 @@ type GetIsuListResponse struct {
 }
 
 type IsuCondition struct {
-	ID         int       	`db:"id"`
-	JIAIsuUUID string    	`db:"jia_isu_uuid"`
-	Timestamp  time.Time 	`db:"timestamp"`
-	IsSitting  bool      	`db:"is_sitting"`
-	Condition  string    	`db:"condition"`
-	Message    string    	`db:"message"`
-	CreatedAt  time.Time 	`db:"created_at"`
-	ConditionLevel string	`db:"condition_level"`
+	ID             int       `db:"id"`
+	JIAIsuUUID     string    `db:"jia_isu_uuid"`
+	Timestamp      time.Time `db:"timestamp"`
+	IsSitting      bool      `db:"is_sitting"`
+	Condition      string    `db:"condition"`
+	Message        string    `db:"message"`
+	CreatedAt      time.Time `db:"created_at"`
+	ConditionLevel string    `db:"condition_level"`
 }
 
 type MySQLConnectionEnv struct {
@@ -213,7 +213,7 @@ func main() {
 	//	ServiceVersion: "0.0.1",
 	//	ProjectID:      "wantedly-dev",
 	//}
-//
+	//
 	//// Profiler initialization, best done as early as possible.
 	//if err := profiler.Start(cfg); err != nil {
 	//	log.Fatalf("failed to parse ECDSA public key: %v", err)
@@ -1072,9 +1072,17 @@ func calculateConditionLevel(condition string) (string, error) {
 	return conditionLevel, nil
 }
 
+var (
+	trendCache     *[]TrendResponse
+	timeTrendCache time.Time
+)
+
 // GET /api/trend
 // ISUの性格毎の最新のコンディション情報
 func getTrend(c echo.Context) error {
+	if trendCache != nil && timeTrendCache.After(time.Now().Add(-1*time.Second)) {
+		return c.JSON(http.StatusOK, trendCache)
+	}
 	characterList := []Isu{}
 	err := db.Select(&characterList, "SELECT `character` FROM `isu` GROUP BY `character`")
 	if err != nil {
@@ -1153,6 +1161,8 @@ func getTrend(c echo.Context) error {
 			})
 	}
 
+	trendCache = &res
+	timeTrendCache = time.Now()
 	return c.JSON(http.StatusOK, res)
 }
 
@@ -1211,17 +1221,17 @@ func postIsuCondition(c echo.Context) error {
 		}
 
 		conditionLevel, err := calculateConditionLevel(cond.Condition)
-			if err != nil {
-				//c.Logger().Error(err)
-				return c.NoContent(http.StatusInternalServerError)
-			}
+		if err != nil {
+			//c.Logger().Error(err)
+			return c.NoContent(http.StatusInternalServerError)
+		}
 
 		isuConditions[i] = IsuCondition{
-			JIAIsuUUID: jiaIsuUUID,
-			Timestamp:  timestamp,
-			IsSitting:  cond.IsSitting,
-			Condition:  cond.Condition,
-			Message:    cond.Message,
+			JIAIsuUUID:     jiaIsuUUID,
+			Timestamp:      timestamp,
+			IsSitting:      cond.IsSitting,
+			Condition:      cond.Condition,
+			Message:        cond.Message,
 			ConditionLevel: conditionLevel,
 		}
 	}

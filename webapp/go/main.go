@@ -1082,7 +1082,7 @@ var (
 // ISUの性格毎の最新のコンディション情報
 func getTrend(c echo.Context) error {
 	mu := sync.Mutex{}
-	if trendCache != nil && timeTrendCache.After(time.Now().Add(-1*time.Second)) {
+	if trendCache != nil && timeTrendCache.Add(time.Second).Before(time.Now()) {
 		mu.Lock()
 		defer mu.Unlock()
 		return c.JSON(http.StatusOK, trendCache)

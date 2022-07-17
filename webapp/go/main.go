@@ -1043,7 +1043,6 @@ func getIsuConditionsFromDB(db *sqlx.DB, jiaIsuUUID string, endTime time.Time, l
 		if err := db.Select(&conditions,query, args...); err != nil {
 			return nil, fmt.Errorf("db error: %v", err)
 		}
-		err = db.Select(&conditions, query, args...)
 	}
 	
 	if err != nil {

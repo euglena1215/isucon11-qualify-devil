@@ -17,6 +17,8 @@ import (
 	"sync"
 	"time"
 
+	_ "net/http/pprof"
+
 	"cloud.google.com/go/profiler"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/go-sql-driver/mysql"
@@ -209,6 +211,12 @@ func init() {
 }
 
 func main() {
+	go func() {
+		if err := http.ListenAndServe("localhost:6060", nil); err != nil {
+			log.Fatal(err)
+		}
+	}()
+
 	cfg := profiler.Config{
 		Service:        "isucon11-q-devil",
 		ServiceVersion: "0.0.1",

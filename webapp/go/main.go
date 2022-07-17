@@ -996,7 +996,7 @@ func getIsuConditions(c echo.Context) error {
 
 	conditionsResponse, err := getIsuConditionsFromDB(db, jiaIsuUUID, endTime, levels, startTime, conditionLimit, isuName)
 	if err != nil {
-		//c.Logger().Errorf("db error: %v", err)
+		c.Logger().Errorf("db error: %v", err)
 		return c.NoContent(http.StatusInternalServerError)
 	}
 	return c.JSON(http.StatusOK, conditionsResponse)

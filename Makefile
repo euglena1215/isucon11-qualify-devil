@@ -82,4 +82,4 @@ bench: log_reset application_build restart slow_on ## bench回す前に実行す
 commit:
 	git add -u .
 	git commit --allow-empty -m "bench"
-	git push
+	git push origin HEAD

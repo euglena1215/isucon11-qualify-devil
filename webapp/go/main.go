@@ -15,6 +15,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -1080,7 +1081,10 @@ var (
 // GET /api/trend
 // ISUの性格毎の最新のコンディション情報
 func getTrend(c echo.Context) error {
+	mu := sync.Mutex{}
 	if trendCache != nil && timeTrendCache.After(time.Now().Add(-1*time.Second)) {
+		mu.Lock()
+		defer mu.Unlock()
 		return c.JSON(http.StatusOK, trendCache)
 	}
 	characterList := []Isu{}
@@ -1161,8 +1165,10 @@ func getTrend(c echo.Context) error {
 			})
 	}
 
+	mu.Lock()
 	trendCache = &res
 	timeTrendCache = time.Now()
+	mu.Unlock()
 	return c.JSON(http.StatusOK, res)
 }
 

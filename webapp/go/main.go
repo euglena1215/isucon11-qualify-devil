@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"math/rand"
 	"net/http"
 	"os"
 	"os/exec"
@@ -18,6 +17,9 @@ import (
 	"sync"
 	"time"
 
+	_ "net/http/pprof"
+
+	"cloud.google.com/go/profiler"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/go-sql-driver/mysql"
 	"github.com/gorilla/sessions"
@@ -209,16 +211,22 @@ func init() {
 }
 
 func main() {
-	//cfg := profiler.Config{
-	//	Service:        "isucon11-q-devil",
-	//	ServiceVersion: "0.0.1",
-	//	ProjectID:      "wantedly-dev",
-	//}
-	//
-	//// Profiler initialization, best done as early as possible.
-	//if err := profiler.Start(cfg); err != nil {
-	//	log.Fatalf("failed to parse ECDSA public key: %v", err)
-	//}
+	go func() {
+		if err := http.ListenAndServe("localhost:6060", nil); err != nil {
+			log.Fatal(err)
+		}
+	}()
+
+	cfg := profiler.Config{
+		Service:        "isucon11-q-devil",
+		ServiceVersion: "0.0.1",
+		ProjectID:      "wantedly-dev",
+	}
+
+	// Profiler initialization, best done as early as possible.
+	if err := profiler.Start(cfg); err != nil {
+		log.Fatalf("failed to parse ECDSA public key: %v", err)
+	}
 	e := echo.New()
 	e.Debug = true
 	e.Logger.SetLevel(log.DEBUG)
@@ -256,7 +264,7 @@ func main() {
 		e.Logger.Fatalf("failed to connect db: %v", err)
 		return
 	}
-	db.SetMaxOpenConns(10)
+	db.SetMaxOpenConns(20)
 	defer db.Close()
 
 	postIsuConditionTargetBaseURL = os.Getenv("POST_ISUCONDITION_TARGET_BASE_URL")
@@ -342,6 +350,9 @@ func postInitialize(c echo.Context) error {
 		//c.Logger().Errorf("db error : %v", err)
 		return c.NoContent(http.StatusInternalServerError)
 	}
+
+	trendCache = nil
+	timeTrendCache = time.Time{}
 
 	return c.JSON(http.StatusOK, InitializeResponse{
 		Language: "go",
@@ -1015,25 +1026,25 @@ func getIsuConditionsFromDB(db *sqlx.DB, jiaIsuUUID string, endTime time.Time, l
 		sql := "SELECT * FROM `isu_condition` WHERE `jia_isu_uuid` = :isu_uuid AND `timestamp` < :timestamp AND `condition_level` IN (:cond_level) ORDER BY `timestamp` DESC LIMIT 20"
 
 		input := map[string]interface{}{
-    		"cond_level": levels,
-    		"isu_uuid": jiaIsuUUID,
-			"timestamp": endTime,
+			"cond_level": levels,
+			"isu_uuid":   jiaIsuUUID,
+			"timestamp":  endTime,
 		}
 		query, args, err := NamedInSql(db, sql, input)
 		if err != nil {
 			return nil, fmt.Errorf("db error: %v", err)
 		}
 
-		if err := db.Select(&conditions,query, args...); err != nil {
+		if err := db.Select(&conditions, query, args...); err != nil {
 			return nil, fmt.Errorf("db error: %v", err)
 		}
 
 	} else {
 		sql := "SELECT * FROM `isu_condition` WHERE `jia_isu_uuid` = :isu_uuid AND `timestamp` < :end_time AND :start_time <= `timestamp` AND `condition_level` IN (:cond_level) ORDER BY `timestamp` DESC limit 20"
 		input := map[string]interface{}{
-    		"cond_level": levels,
-    		"isu_uuid": jiaIsuUUID,
-			"end_time": endTime,
+			"cond_level": levels,
+			"isu_uuid":   jiaIsuUUID,
+			"end_time":   endTime,
 			"start_time": startTime,
 		}
 		query, args, err := NamedInSql(db, sql, input)
@@ -1041,27 +1052,27 @@ func getIsuConditionsFromDB(db *sqlx.DB, jiaIsuUUID string, endTime time.Time, l
 			return nil, fmt.Errorf("db error: %v", err)
 		}
 
-		if err := db.Select(&conditions,query, args...); err != nil {
+		if err := db.Select(&conditions, query, args...); err != nil {
 			return nil, fmt.Errorf("db error: %v", err)
 		}
 	}
-	
+
 	if err != nil {
 		return nil, fmt.Errorf("db error: %v", err)
 	}
 
 	conditionsResponse := []*GetIsuConditionResponse{}
 	for _, c := range conditions {
-			data := GetIsuConditionResponse{
-				JIAIsuUUID:     c.JIAIsuUUID,
-				IsuName:        isuName,
-				Timestamp:      c.Timestamp.Unix(),
-				IsSitting:      c.IsSitting,
-				Condition:      c.Condition,
-				ConditionLevel: c.ConditionLevel,
-				Message:        c.Message,
-			}
-			conditionsResponse = append(conditionsResponse, &data)
+		data := GetIsuConditionResponse{
+			JIAIsuUUID:     c.JIAIsuUUID,
+			IsuName:        isuName,
+			Timestamp:      c.Timestamp.Unix(),
+			IsSitting:      c.IsSitting,
+			Condition:      c.Condition,
+			ConditionLevel: c.ConditionLevel,
+			Message:        c.Message,
+		}
+		conditionsResponse = append(conditionsResponse, &data)
 	}
 
 	return conditionsResponse, nil
@@ -1188,13 +1199,6 @@ func getTrend(c echo.Context) error {
 // POST /api/condition/:jia_isu_uuid
 // ISUからのコンディションを受け取る
 func postIsuCondition(c echo.Context) error {
-	// TODO: 一定割合リクエストを落としてしのぐようにしたが、本来は全量さばけるようにすべき
-	dropProbability := 0.9
-	if rand.Float64() <= dropProbability {
-		//c.Logger().Warnf("drop post isu condition request")
-		return c.NoContent(http.StatusAccepted)
-	}
-
 	jiaIsuUUID := c.Param("jia_isu_uuid")
 	if jiaIsuUUID == "" {
 		return c.String(http.StatusBadRequest, "missing: jia_isu_uuid")
@@ -1261,27 +1265,9 @@ func postIsuCondition(c echo.Context) error {
 }
 
 func insertPostCondition(isuConditions []IsuCondition) {
-	tx, err := db.Beginx()
-	if err != nil {
-		panic(err)
-		// c.Logger().Errorf("db error: %v", err)
-		// return c.NoContent(http.StatusInternalServerError)
-	}
-	defer tx.Rollback()
-
 	query := "INSERT INTO `isu_condition` (`jia_isu_uuid`, `timestamp`, `is_sitting`, `condition`, `message`, `condition_level`) VALUES (:jia_isu_uuid, :timestamp, :is_sitting, :condition, :message, :condition_level)"
-	_, err = tx.NamedExec(query, isuConditions)
+	_, err := db.NamedExec(query, isuConditions)
 	if err != nil {
-		panic(err)
-		// c.Logger().Errorf("db error: %v", err)
-		// return c.NoContent(http.StatusInternalServerError)
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		panic(err)
-		// c.Logger().Errorf("db error: %v", err)
-		// return c.NoContent(http.StatusInternalServerError)
 	}
 }
 
@@ -1324,16 +1310,16 @@ func getIndex(c echo.Context) error {
 }
 
 func NamedInSql(db *sqlx.DB, query string, arg interface{}) (string, []interface{}, error) {
-    query, args, err := sqlx.Named(query, arg)
-    if err != nil {
-        return "", nil, err
-    }
+	query, args, err := sqlx.Named(query, arg)
+	if err != nil {
+		return "", nil, err
+	}
 
-    query, args, err = sqlx.In(query, args...)
-    if err != nil {
-        return "", nil, err
-    }
-    query = db.Rebind(query)
- 
-    return query, args, err
+	query, args, err = sqlx.In(query, args...)
+	if err != nil {
+		return "", nil, err
+	}
+	query = db.Rebind(query)
+
+	return query, args, err
 }

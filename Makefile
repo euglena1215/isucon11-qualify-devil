@@ -57,7 +57,7 @@ mysql: ## mysql接続コマンド
 	mysql -h $(DB_HOST) -u $(DB_USER) -p$(DB_PASS) $(DB_NAME)
 
 pprof:
-	@go tool pprof -png -output pprof.png http://localhost:6060/debug/pprof/profile && discordcat -f pprof.png --filename pprof.png
+	@go tool pprof -http=0.0.0.0:8080 /home/isucon/webapp/go/isucondition http://localhost:6060/debug/pprof/profile
 
 .PHONY: application_build
 application_build: ## application build (wip)

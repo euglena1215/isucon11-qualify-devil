@@ -1028,7 +1028,7 @@ func getIsuConditionsFromDB(db *sqlx.DB, jiaIsuUUID string, endTime time.Time, l
 		}
 
 	} else {
-		sql := "SELECT * FROM `isu_condition` WHERE `jia_isu_uuid` = :isu_uuid AND `timestamp` < :end_time AND start_time <= `timestamp` AND `condition_level` IN (:cond_level) ORDER BY `timestamp` DESC limit 20"
+		sql := "SELECT * FROM `isu_condition` WHERE `jia_isu_uuid` = :isu_uuid AND `timestamp` < :end_time AND :start_time <= `timestamp` AND `condition_level` IN (:cond_level) ORDER BY `timestamp` DESC limit 20"
 		input := map[string]interface{}{
     		"cond_level": levels,
     		"isu_uuid": jiaIsuUUID,

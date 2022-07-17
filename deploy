@@ -7,12 +7,14 @@ warn() {
 BRANCH=$1
 
 echo "cd /home/isucon && \
+git fetch && \
 git stash && \
 git checkout $BRANCH && \
 git pull origin $BRANCH && \
 make bench"
 
 cd /home/isucon && \
+git fetch && \
 git stash && \
 git checkout $BRANCH && \
 git pull origin $BRANCH && \

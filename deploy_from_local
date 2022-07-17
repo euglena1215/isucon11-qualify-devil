@@ -5,15 +5,15 @@ warn() {
 }
 
 TARGET=$1
-BRANCH=$2
-PEM=$3
+PEM=$2
+BRANCH=$3
 
 if [ "$TARGET" = "server1" ]; then
-  SSH_OPTION="-i $PEM ubuntu@35.77.14.114"
+  SSH_OPTION="-i $PEM ubuntu@18.180.157.95"
 elif [ "$TARGET" = "server2" ]; then
-  SSH_OPTION="-i $PEM ubuntu@35.74.1.250"
+  SSH_OPTION="-i $PEM ubuntu@35.77.21.99"
 elif [ "$TARGET" = "server3" ]; then
-  SSH_OPTION="-i $PEM ubuntu@35.78.253.84"
+  SSH_OPTION="-i $PEM ubuntu@35.74.253.10"
 else
   warn "Please set server1 or server2 or server3"
   exit 1

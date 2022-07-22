@@ -213,9 +213,21 @@ func init() {
 }
 
 func main() {
+	worker = make(chan IsuCondition, 2000)
+
 	go func() {
-		if err := http.ListenAndServe("localhost:6060", nil); err != nil {
-			log.Fatal(err)
+		conditions := make([]IsuCondition, 0, 10000)
+
+		for {
+      select {
+      case condition := <-worker:
+        conditions = append(conditions, condition)
+
+        if len(conditions) >= 1000 {
+          insertPostCondition(conditions)
+          conditions = conditions[:0]
+        }
+      }
 		}
 	}()
 
@@ -274,22 +286,6 @@ func main() {
 		e.Logger.Fatalf("missing: POST_ISUCONDITION_TARGET_BASE_URL")
 		return
 	}
-
-	worker = make(chan IsuCondition, 2000)
-
-	go func() {
-		conditions := make([]IsuCondition, 1000)
-
-		for {
-			condition := <-worker
-			conditions = append(conditions, condition)
-
-			if len(conditions) >= 1000 {
-				insertPostCondition(conditions)
-			}
-			conditions = make([]IsuCondition, 1000)
-		}
-	}()
 
 	serverPort := fmt.Sprintf(":%v", getEnv("SERVER_APP_PORT", "3000"))
 	e.Logger.Fatal(e.Start(serverPort))
@@ -1277,9 +1273,9 @@ func postIsuCondition(c echo.Context) error {
 		}
 	}
 
-	// for _, isuCondition := range isuConditions {
-	// 	worker <- isuCondition
-	// }
+	for _, isuCondition := range isuConditions {
+		worker <- isuCondition
+	}
 
 	// go insertPostCondition(isuConditions)
 

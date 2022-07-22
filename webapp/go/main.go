@@ -14,7 +14,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	_ "net/http/pprof"
@@ -1119,12 +1118,12 @@ var (
 // GET /api/trend
 // ISUの性格毎の最新のコンディション情報
 func getTrend(c echo.Context) error {
-	mu := sync.Mutex{}
-	if trendCache != nil && timeTrendCache.Add(time.Second).Before(time.Now()) {
-		mu.Lock()
-		defer mu.Unlock()
-		return c.JSON(http.StatusOK, trendCache)
-	}
+	// mu := sync.Mutex{}
+	// if trendCache != nil && timeTrendCache.Add(time.Second).Before(time.Now()) {
+	// 	mu.Lock()
+	// 	defer mu.Unlock()
+	// 	return c.JSON(http.StatusOK, trendCache)
+	// }
 	characterList := []Isu{}
 	err := db.Select(&characterList, "SELECT `character` FROM `isu` GROUP BY `character`")
 	if err != nil {
@@ -1203,10 +1202,10 @@ func getTrend(c echo.Context) error {
 			})
 	}
 
-	mu.Lock()
-	trendCache = &res
-	timeTrendCache = time.Now()
-	mu.Unlock()
+	// mu.Lock()
+	// trendCache = &res
+	// timeTrendCache = time.Now()
+	// mu.Unlock()
 	return c.JSON(http.StatusOK, res)
 }
 

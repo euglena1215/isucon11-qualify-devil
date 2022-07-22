@@ -1273,13 +1273,13 @@ func postIsuCondition(c echo.Context) error {
 		}
 	}
 
-	go func() {
-		for _, isuCondition := range isuConditions {
-			worker <- isuCondition
-		}
-	}()
+	// go func() {
+	// 	for _, isuCondition := range isuConditions {
+	// 		worker <- isuCondition
+	// 	}
+	// }()
 
-	// go insertPostCondition(isuConditions)
+	go insertPostCondition(isuConditions)
 
 	return c.NoContent(http.StatusAccepted)
 }

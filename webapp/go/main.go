@@ -1106,11 +1106,11 @@ var (
 // ISUの性格毎の最新のコンディション情報
 func getTrend(c echo.Context) error {
 	mu := sync.Mutex{}
-	if trendCache != nil && timeTrendCache.Add(time.Second).Before(time.Now()) {
-		mu.Lock()
-		defer mu.Unlock()
-		return c.JSON(http.StatusOK, trendCache)
-	}
+	// if trendCache != nil && timeTrendCache.Add(time.Second).Before(time.Now()) {
+	// 	mu.Lock()
+	// 	defer mu.Unlock()
+	// 	return c.JSON(http.StatusOK, trendCache)
+	// }
 	characterList := []Isu{}
 	err := db.Select(&characterList, "SELECT `character` FROM `isu` GROUP BY `character`")
 	if err != nil {

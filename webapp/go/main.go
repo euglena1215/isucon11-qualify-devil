@@ -1277,9 +1277,9 @@ func postIsuCondition(c echo.Context) error {
 		}
 	}
 
-  for _, isuCondition := range isuConditions {
-    worker <- isuCondition
-  }
+	// for _, isuCondition := range isuConditions {
+	// 	worker <- isuCondition
+	// }
 
 	// go insertPostCondition(isuConditions)
 

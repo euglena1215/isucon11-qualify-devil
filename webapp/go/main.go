@@ -53,6 +53,8 @@ var (
 	jiaJWTSigningKey *ecdsa.PublicKey
 
 	postIsuConditionTargetBaseURL string // JIAへのactivate時に登録する，ISUがconditionを送る先のURL
+
+	worker chan IsuCondition
 )
 
 type Config struct {
@@ -272,6 +274,22 @@ func main() {
 		e.Logger.Fatalf("missing: POST_ISUCONDITION_TARGET_BASE_URL")
 		return
 	}
+
+	worker = make(chan IsuCondition, 2000)
+
+	go func() {
+		conditions := make([]IsuCondition, 1000)
+
+		for {
+			condition := <-worker
+			conditions = append(conditions, condition)
+
+			if len(conditions) >= 1000 {
+				insertPostCondition(conditions)
+			}
+			conditions = make([]IsuCondition, 1000)
+		}
+	}()
 
 	serverPort := fmt.Sprintf(":%v", getEnv("SERVER_APP_PORT", "3000"))
 	e.Logger.Fatal(e.Start(serverPort))
@@ -1259,7 +1277,11 @@ func postIsuCondition(c echo.Context) error {
 		}
 	}
 
-	go insertPostCondition(isuConditions)
+  for _, isuCondition := range isuConditions {
+    worker <- isuCondition
+  }
+
+	// go insertPostCondition(isuConditions)
 
 	return c.NoContent(http.StatusAccepted)
 }
